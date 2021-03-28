@@ -1,7 +1,8 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import time
-from datetime import date
+import schedule
+from selenium.common.exceptions import NoSuchElementException
 
 # mac
 # chrome 드라이버 저장소 - "/Users/sujikang/Desktop/chromedriver"
@@ -13,13 +14,13 @@ from datetime import date
 
 chrome_options = Options()
 chrome_options.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
-chrome_driver = "/Users/sujikang/Desktop/chromedriver"
+chrome_driver = "/chromedriver_win32/chromedriver"
 driver = webdriver.Chrome(chrome_driver, options=chrome_options)
 
 # 예약 하려는 웹 페이지 주소 띄워놓기
 #url lunch = 'https://booking.naver.com/booking/6/bizes/223362/items/3012318'
 #url dinner = 'https://booking.naver.com/booking/6/bizes/223362/items/3020244'
-#아웃백 url = 'https://booking.naver.com/booking/6/bizes/223362/items/3020244'
+#아웃백 url = 'https://booking.naver.com/booking/6/bizes/305136/items/3700886?area=ple'
 
 # 1. 5분마다 현재 페이지 새로고침
 # 2. 정상 페이지일 경우 월 별로 로직 실행
@@ -32,17 +33,29 @@ driver = webdriver.Chrome(chrome_driver, options=chrome_options)
 
 def main():
     # todo 5분마다 매크로 돌리기
-    while True:
-        is_month_disable = aruhi_reservation()
-        if not is_month_disable:
-            # 다음 클릭
-            calender_next_element = driver.find_element_by_class_name("calendar-btn-next-mon")
-            calender_next_element.click()
-        else:
-            break
+    try:
+        # 에러가 안날경우
+        url = "https://booking.naver.com/booking/6/bizes/223362/items/3012318"
+        driver.get(url)
+        driver.find_element_by_class_name("calendar-date")
+        while True:
+            is_month_disable = aruhi_reservation()
+            if not is_month_disable:
+                # 다음 클릭
+                calender_next_element = driver.find_element_by_class_name("calendar-btn-next-mon")
+                calender_next_element.click()
+            else:
+                break
+    except NoSuchElementException:  # spelling error making this code not work as expected
+        #에러가 날 경우
+        print("에러가 났습니다~")
+        pass
+
+
 
 def aruhi_reservation():
     #todo 에러페이지가 아닐경우부터 로직 시작
+
     time.sleep(1)
     day_elements = driver.find_elements_by_class_name("calendar-date")
     disabled_day = 0
@@ -87,4 +100,12 @@ def aruhi_reservation():
     is_month_disable = disabled_day == len(day_elements)
     return is_month_disable
 
-main()
+
+#5분마다 실행
+schedule.every(5).seconds.do(main)
+
+
+#schedule.run_pending() 함수를 1초 주기로 호출하여 등록된 스케쥴 Job의 계획을 확인하고 계획(주기 또는 시점)에 해당되는 Job을 수행
+while True:
+    schedule.run_pending()
+    time.sleep(1)
