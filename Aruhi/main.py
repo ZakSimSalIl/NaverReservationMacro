@@ -94,9 +94,23 @@ def aruhi_monthly_reservation():
 
             if is_time_available:
                 # btn_plus_minus class는 방문인원, 몇인분에 모두 적용됨. 마지막 element가 몇인분의 plus에 해당함.
-                # 아루히는 방문인원이 기본 1, 몇인분이 0 이기 때문에 인분..숫자를 하나 늘려줘야한다.
-                time.sleep(0.5) # 멈춤하지 않으면 btn_plus_minus로 elements 를 찾아도 맨 위의 방문인원만 잡히기 때문에 (+, - 2개) sleep 해준다
+                # 아루히는 방문인원이 기본 1, 몇인분이 0 으로 설정되어있음.
+                time.sleep(0.5) # 잠시 멈춤하지 않으면 btn_plus_minus로 elements 를 찾아도 맨 위의 방문인원만 잡히기 때문에 (+, - => 2개) sleep 해준다
+                
+                # 기본 인원이 1으로 설정되어 있으므로 한번 클릭 -> 2명
+                person_plus_element = driver.find_elements_by_class_name("btn_plus_minus")[1] # 인원 + 버튼
+                person_plus_element.click()
+                
+                is_two_person_available = not isElementExist("_booking_alert_txt")
+                if not is_two_person_available:
+                    print("두명 이상 예약은 불가능합니다")
+                    close_element = driver.find_element_by_class_name("btn_cls")
+                    close_element.click()
+                    continue
+                    
+                # 기본 인분이 0으로 설정되어 있으므로 두번 클릭 -> 2명
                 meal_plus_element = driver.find_elements_by_class_name("btn_plus_minus")[-1]
+                meal_plus_element.click()
                 meal_plus_element.click()
 
                 # 예약 신청하기
