@@ -3,6 +3,8 @@ from selenium.webdriver.chrome.options import Options
 import time
 import schedule
 from selenium.common.exceptions import NoSuchElementException
+from datetime import datetime
+import os
 
 # mac
 # chrome 드라이버 저장소 - "/Users/sujikang/Desktop/chromedriver"
@@ -21,6 +23,7 @@ driver = webdriver.Chrome(chrome_driver, options=chrome_options)
 #url lunch = 'https://booking.naver.com/booking/6/bizes/223362/items/3012318'
 #url dinner = 'https://booking.naver.com/booking/6/bizes/223362/items/3020244'
 #아웃백 url = 'https://booking.naver.com/booking/6/bizes/305136/items/3700886?area=ple'
+#워킹 온더 클라우드 url  = 'https://booking.naver.com/booking/6/bizes/83854/items/3237361?area=plt'
 
 # 1. 5분마다 현재 페이지 새로고침
 # 2. 정상 페이지일 경우 월 별로 로직 실행
@@ -31,20 +34,23 @@ driver = webdriver.Chrome(chrome_driver, options=chrome_options)
 # 2-5. 결제하기 버튼 클릭
 # 3. 만약 월의 모든 날짜가 회색인 경우, 중단
 
-def isErrorPage():
+def isElementExist(class_name):
     try:
-        driver.find_element_by_class_name("calendar-date")
-        return False
-    except NoSuchElementException:
-        print("현재 예약 가능한 상품이 없습니다.")
+        driver.find_element_by_class_name(class_name)
         return True
+    except NoSuchElementException:
+        return False
 
 def main():
+    # 현재 시간 출력
+    print("Current Time =", datetime.now().strftime("%I:%M:%S %p"))
+
     url = "https://booking.naver.com/booking/6/bizes/223362/items/3012318"
     driver.get(url)
     time.sleep(2) # 웹 로딩때까지 sleep
 
-    if not isErrorPage():
+    is_error_page = not isElementExist("calendar-date")
+    if not is_error_page:
         while True:
             is_month_disable = aruhi_monthly_reservation() # 월 별로 Aruhi 예약
             if not is_month_disable and not isReservationSuccess:
@@ -53,6 +59,8 @@ def main():
                 calender_next_element.click()
             else:
                 break
+    else:
+        print("현재 예약 가능한 상품이 없습니다.")
 
 def aruhi_monthly_reservation():
     time.sleep(1)
@@ -60,8 +68,11 @@ def aruhi_monthly_reservation():
     disabled_day = 0
 
     for day in day_elements:
+        day_num_element = day.find_element_by_class_name("num")
+        day_num_text = day_num_element.text
         # 회색 e4e4e4
-        if day.find_element_by_class_name("num").value_of_css_property('color') != "rgba(228, 228, 228, 1)":
+        if day_num_element.value_of_css_property('color') != "rgba(228, 228, 228, 1)":
+            print(day_num_text, "일 확인 중..")
             day.click()
 
             time.sleep(0.5) # time list 찾는데 시간이 걸리기 때문에 여기서 쉬어줘야함
@@ -71,7 +82,6 @@ def aruhi_monthly_reservation():
             flatten_time_element_list = [y for x in list(time_element_list) for y in x] #['11:30', '1:00']
 
             is_time_available = False
-            print(len(flatten_time_element_list))
             for time_element in flatten_time_element_list:
                 # 색상
                 time_element_color = time_element.find_element_by_tag_name('a').value_of_css_property(
@@ -85,6 +95,7 @@ def aruhi_monthly_reservation():
             if is_time_available:
                 # btn_plus_minus class는 방문인원, 몇인분에 모두 적용됨. 마지막 element가 몇인분의 plus에 해당함.
                 # 아루히는 방문인원이 기본 1, 몇인분이 0 이기 때문에 인분..숫자를 하나 늘려줘야한다.
+                time.sleep(0.5) # 멈춤하지 않으면 btn_plus_minus로 elements 를 찾아도 맨 위의 방문인원만 잡히기 때문에 (+, - 2개) sleep 해준다
                 meal_plus_element = driver.find_elements_by_class_name("btn_plus_minus")[-1]
                 meal_plus_element.click()
 
@@ -93,6 +104,10 @@ def aruhi_monthly_reservation():
                 reservation_element.click()
                 global isReservationSuccess
                 isReservationSuccess = True
+                print('\007') # beep sound
+                success_message = "{} 일 예약 성공".format(day_num_text)
+                os.system('say {}'.format(success_message))
+                print(success_message)
                 break
         else:
             disabled_day += 1
