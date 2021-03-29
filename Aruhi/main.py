@@ -19,7 +19,7 @@ chrome_options.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
 chrome_driver = "/Users/sujikang/Desktop/chromedriver"
 driver = webdriver.Chrome(chrome_driver, options=chrome_options)
 
-# 예약 하려는 웹 페이지 주소 띄워놓기
+# 예약 하려는 웹 페이지 주소
 #url lunch = 'https://booking.naver.com/booking/6/bizes/223362/items/3012318'
 #url dinner = 'https://booking.naver.com/booking/6/bizes/223362/items/3020244'
 #아웃백 url = 'https://booking.naver.com/booking/6/bizes/305136/items/3700886?area=ple'
@@ -34,12 +34,16 @@ driver = webdriver.Chrome(chrome_driver, options=chrome_options)
 # 2-5. 결제하기 버튼 클릭
 # 3. 만약 월의 모든 날짜가 회색인 경우, 중단
 
-def isElementExist(class_name):
+def is_element_exist(class_name):
     try:
         driver.find_element_by_class_name(class_name)
         return True
     except NoSuchElementException:
         return False
+        
+def log_with_voice_alert(message):
+    os.system('say {}'.format(message))
+    print(message)
 
 def main():
     # 현재 시간 출력
@@ -48,12 +52,13 @@ def main():
     url = "https://booking.naver.com/booking/6/bizes/223362/items/3012318"
     driver.get(url)
     time.sleep(2) # 웹 로딩때까지 sleep
+    people_count = 2
 
-    is_error_page = not isElementExist("calendar-date")
+    is_error_page = not is_element_exist("calendar-date")
     if not is_error_page:
         while True:
-            is_month_disable = aruhi_monthly_reservation() # 월 별로 Aruhi 예약
-            if not is_month_disable and not isReservationSuccess:
+            is_month_disable = aruhi_monthly_reservation(people_count) # 월 별로 Aruhi 예약
+            if not is_month_disable and not is_reservation_success:
                 # 다음 달 클릭 후 다시 while loop
                 calender_next_element = driver.find_element_by_class_name("calendar-btn-next-mon")
                 calender_next_element.click()
@@ -62,7 +67,7 @@ def main():
     else:
         print("현재 예약 가능한 상품이 없습니다.")
 
-def aruhi_monthly_reservation():
+def aruhi_monthly_reservation(people_count):
     time.sleep(1)
     day_elements = driver.find_elements_by_class_name("calendar-date")
     disabled_day = 0
@@ -99,29 +104,32 @@ def aruhi_monthly_reservation():
                 
                 # 기본 인원이 1으로 설정되어 있으므로 한번 클릭 -> 2명
                 person_plus_element = driver.find_elements_by_class_name("btn_plus_minus")[1] # 인원 + 버튼
-                person_plus_element.click()
+                if people_count > 1:
+                    for i in range(0, people_count-1):
+                        person_plus_element.click()
                 
-                is_two_person_available = not isElementExist("_booking_alert_txt")
-                if not is_two_person_available:
-                    print("두명 이상 예약은 불가능합니다")
+                
+                is_desired_people_available = not is_element_exist("_booking_alert_txt")
+                if not is_desired_people_available:
+                    desired_people_failure_message = "{} 일, 해당 인원의 예약은 불가능합니다. 한명은 가능한데 하시던가여".format(day_num_text)
+                    log_with_voice_alert(desired_people_failure_message)
                     close_element = driver.find_element_by_class_name("btn_cls")
                     close_element.click()
                     continue
                     
                 # 기본 인분이 0으로 설정되어 있으므로 두번 클릭 -> 2명
                 meal_plus_element = driver.find_elements_by_class_name("btn_plus_minus")[-1]
-                meal_plus_element.click()
-                meal_plus_element.click()
+                for i in range(0, people_count):
+                    meal_plus_element.click()
 
                 # 예약 신청하기
                 reservation_element = driver.find_element_by_class_name("bottom_btn").find_element_by_tag_name('button')
                 reservation_element.click()
-                global isReservationSuccess
-                isReservationSuccess = True
+                global is_reservation_success
+                is_reservation_success = True
                 print('\007') # beep sound
                 success_message = "{} 일 예약 성공".format(day_num_text)
-                os.system('say {}'.format(success_message))
-                print(success_message)
+                log_with_voice_alert(success_message)
                 break
         else:
             disabled_day += 1
@@ -129,13 +137,13 @@ def aruhi_monthly_reservation():
     is_month_disable = disabled_day == len(day_elements)
     return is_month_disable
 
-isReservationSuccess = False
+is_reservation_success = False
 
 #5분마다 실행
 schedule.every(5).minutes.do(main)
 
 #schedule.run_pending() 함수를 1초 주기로 호출하여 등록된 스케쥴 Job의 계획을 확인하고 계획(주기 또는 시점)에 해당되는 Job을 수행
-while not isReservationSuccess:
+while not is_reservation_success:
     schedule.run_pending()
     time.sleep(1)
 
