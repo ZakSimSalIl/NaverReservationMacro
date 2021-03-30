@@ -30,7 +30,7 @@ def log_with_voice_alert(message):
     print(message)
 
 
-def main(url, people_count):
+def aruhi_reservation(url, people_count):
     # 현재 시간 출력
     print("Current Time =", datetime.now().strftime("%I:%M:%S %p"))
 
@@ -149,13 +149,35 @@ def aruhi_monthly_reservation(people_count):
     return is_month_disable
 
 
-# todo 메인 리팩토링할때 어디까지 전역변수로 설정?
-chrome_options = Options()
-chrome_options.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
+def get_driver(driver_path):
+    # localhost:9222 포트로 실행된 크롬 option 설정
+    chrome_options = Options()
+    chrome_options.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
 
-# 다운로드 받은 chrome driver 경로 설정
-chrome_driver = "/Users/sujikang/Desktop/chromedriver"
-driver = webdriver.Chrome(chrome_driver, options=chrome_options)
+    # 다운로드 받은 chrome driver 경로 설정
+    driver = webdriver.Chrome(driver_path, options=chrome_options)
+    return driver
+
+
+def main(schedule_cycle, url, people_count):
+    # job 수행 주기 및 수행할 함수 등록
+    schedule.every(schedule_cycle).seconds.do(lambda: aruhi_reservation(url, people_count))
+
+    # 예약이 성공할때까지 수행
+    while not is_reservation_success:
+        # 1초 주기로 등록된 스케쥴 job 의 계획을 확인 및 수행
+        schedule.run_pending()
+        time.sleep(1)
+
+
+# 전역변수 설정 - 변경 가능
+
+# 크롬 제어를 위한 웹드라이버 설정 (웹드라이버가 설치된 경로)
+driver_path = "/Users/sujikang/Desktop/chromedriver"
+driver = get_driver(driver_path)
+
+# job 수행 주기 설정(단위: 초) (ex. 60*5 => 5분)
+schedule_cycle = 10
 
 # 예약 하려는 웹 페이지 주소 설정
 #   - 아루히 lunch = 'https://booking.naver.com/booking/6/bizes/223362/items/3012318'
@@ -166,13 +188,8 @@ url = "https://booking.naver.com/booking/6/bizes/223362/items/3012318"
 # 예약 인원 설정
 people_count = 2
 
-# job 수행 주기 (단위: 초) 설정. (ex. 60*5 => 5분)
-schedule_cycle = 10
-schedule.every(schedule_cycle).seconds.do(lambda: main(url, people_count))
-
-# 예약이 성공할때까지 수행
+# 예약 성공 여부 판단 변수
 is_reservation_success = False
-while not is_reservation_success:
-    # 1초 주기로 등록된 스케쥴 job 의 계획을 확인 및 수행
-    schedule.run_pending()
-    time.sleep(1)
+
+# 메인 로직 실행
+main(schedule_cycle, url, people_count)
