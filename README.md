@@ -7,6 +7,7 @@
 
    - **mac**: `/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222 --user-data-dir="~/Desktop/temp_chrome"`
    - **window**: `C:\Program Files (x86)\Google\Chrome\Application\chrome.exe --remote-debugging-port=9222 --user-data-dir="C:/Chrome_debug_temp"`
+   - **주의점** : 화면 배율 100%로 설정
 
 2. `chrome://settings/help` 에서 크롬 버전 확인
 
@@ -17,6 +18,8 @@
    - 받은 chromedriver 경로 지정 
 
      `chrome_driver = "/Users/kangsujin/Desktop/chromedriver"`
+     
+     `chrome_driver = "/chromedriver_win32/chromedriver"`
 
    - 원하는 url 설정 
 
