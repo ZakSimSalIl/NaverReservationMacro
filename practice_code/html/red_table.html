@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+table, th, td {
+  border: 1px solid black;
+}
+td {
+  width: 150px;
+  height: 150px;
+  
+}
+</style>
+<script>
+function makeRedBG() {
+	
+    var rand = Math.random();
+    if (rand < 0.5) {
+        var table = document.getElementById('mytable');
+	var row = Math.ceil(Math.random() * 100) % 3;
+    	var column = Math.ceil(Math.random() * 100) % 3;
+        	console.log(row)
+        	console.log(column)    	
+
+        table.rows[row].cells[column].style.backgroundColor = "red";
+    }
+}
+window.onload = function() {
+  makeRedBG()
+}
+</script>
+</head>
+<body>
+
+<h2>Table With Border</h2>
+
+<table id="mytable">
+  <tr>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+</table>
+
+</body>
+</html>
